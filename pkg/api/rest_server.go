@@ -149,8 +149,6 @@ func (s *RESTServer) createTask(w http.ResponseWriter, r *http.Request) {
 // listTasks lists all tasks
 func (s *RESTServer) listTasks(w http.ResponseWriter, r *http.Request) {
 	state := s.state.GetState()
-	state.mu.RLock()
-	defer state.mu.RUnlock()
 
 	tasks := make([]*models.Task, 0, len(state.Tasks))
 	for _, task := range state.Tasks {
@@ -220,8 +218,6 @@ func (s *RESTServer) handleGPUs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	state := s.state.GetState()
-	state.mu.RLock()
-	defer state.mu.RUnlock()
 
 	gpus := make([]*models.GPU, 0, len(state.GPUs))
 	var idle, busy, offline int
@@ -262,8 +258,6 @@ func (s *RESTServer) handleQuota(w http.ResponseWriter, r *http.Request) {
 // getQuota gets current quota
 func (s *RESTServer) getQuota(w http.ResponseWriter, r *http.Request) {
 	state := s.state.GetState()
-	state.mu.RLock()
-	defer state.mu.RUnlock()
 
 	s.sendJSON(w, http.StatusOK, map[string]interface{}{
 		"total_gpus": state.Quota.TotalGPUs,

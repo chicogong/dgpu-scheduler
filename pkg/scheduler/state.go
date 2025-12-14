@@ -84,7 +84,7 @@ func (sm *StateManager) AddGPU(gpu *models.GPU) {
 	defer sm.state.mu.Unlock()
 
 	sm.state.GPUs[gpu.ID] = gpu
-	sm.state.TotalGPUs++
+	sm.state.Quota.TotalGPUs++
 	sm.incrementVersion()
 	sm.triggerSnapshot()
 }
