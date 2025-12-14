@@ -1,0 +1,49 @@
+# DGPU Scheduler Configuration
+
+server:
+  # gRPC server address for agent communication
+  grpc_address: ":9090"
+  # HTTP REST API address for external users
+  http_address: ":8080"
+
+scheduler:
+  # Role: master or standby
+  role: "master"
+  # Scheduling interval in seconds
+  schedule_interval: 5
+  # Snapshot interval in seconds
+  snapshot_interval: 30
+
+replication:
+  # Enable replication
+  enabled: true
+  # Peer scheduler address (standby address if this is master, vice versa)
+  peer_address: "scheduler-standby:9090"
+  # Heartbeat interval in seconds
+  heartbeat_interval: 2
+  # Heartbeat timeout (3 missed heartbeats)
+  heartbeat_timeout: 6
+
+quota:
+  # Online service quota percentage (0.0 - 1.0)
+  online_percent: 0.7
+  # Batch processing quota percentage (0.0 - 1.0)
+  batch_percent: 0.3
+
+agent:
+  # Agent heartbeat timeout in seconds
+  heartbeat_timeout: 15
+
+storage:
+  # State snapshot directory
+  snapshot_dir: "/var/lib/dgpu-scheduler/state"
+  # Shared storage path for master election (optional)
+  shared_storage: "/mnt/shared/dgpu-scheduler"
+
+logging:
+  # Log level: debug, info, warn, error
+  level: "info"
+  # Log format: json, text
+  format: "json"
+  # Log output: stdout, stderr, or file path
+  output: "stdout"

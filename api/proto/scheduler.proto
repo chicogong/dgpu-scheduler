@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+package scheduler;
+
+option go_package = "github.com/chicogong/dgpu-scheduler/api/proto";
+
+// SchedulerService defines the API for agent-scheduler communication
+service SchedulerService {
+  // RegisterAgent registers a new agent with the scheduler
+  rpc RegisterAgent(RegisterRequest) returns (RegisterResponse);
+
+  // Heartbeat maintains bidirectional streaming for agent health monitoring
+  rpc Heartbeat(stream HeartbeatRequest) returns (stream HeartbeatResponse);
+
+  // TaskFinished notifies the scheduler that a task has completed
+  rpc TaskFinished(TaskFinishedRequest) returns (TaskFinishedResponse);
+}
+
+// ReplicationService defines the API for master-standby replication
+service ReplicationService {
+  // SyncState synchronizes state from master to standby
+  rpc SyncState(stream StateUpdate) returns (stream SyncAck);
+
+  // Ping checks if the peer scheduler is alive
+  rpc Ping(PingRequest) returns (PingResponse);
+}
+
+// GPU represents a GPU device
+message GPU {
+  string id = 1;
+  int32 device_index = 2;
+  string model = 3;
+  int64 memory = 4;
+}
+
+// GPUStatus represents the current status of a GPU
+message GPUStatus {
+  string id = 1;
+  string status = 2;  // "idle", "busy", "offline"
+  float utilization = 3;
+  int64 memory_used = 4;
+}
+
+// Task represents a scheduling task
+message Task {
+  string id = 1;
+  string priority = 2;  // "high", "low"
+  int32 gpu_count = 3;
+  string gpu_model = 4;
+  string command = 5;
+  map<string, string> env = 6;
+  repeated string assigned_gpus = 7;
+}
+
+// RegisterRequest is sent by agent during registration
+message RegisterRequest {
+  string agent_id = 1;
+  string address = 2;
+  repeated GPU gpus = 3;
+}
+
+// RegisterResponse is returned after successful registration
+message RegisterResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// HeartbeatRequest is sent periodically by agent
+message HeartbeatRequest {
+  string agent_id = 1;
+  repeated GPUStatus gpu_status = 2;
+  int64 timestamp = 3;
+}
+
+// HeartbeatResponse is returned by scheduler
+message HeartbeatResponse {
+  bool is_master = 1;
+  repeated Task tasks = 2;
+  int64 timestamp = 3;
+}
+
+// TaskFinishedRequest notifies task completion
+message TaskFinishedRequest {
+  string task_id = 1;
+  string status = 2;  // "success", "failed"
+  string error = 3;
+  int64 timestamp = 4;
+}
+
+// TaskFinishedResponse acknowledges task completion
+message TaskFinishedResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// StateUpdate represents a state change for replication
+message StateUpdate {
+  enum Type {
+    TASK = 0;
+    GPU = 1;
+    QUOTA = 2;
+  }
+  Type type = 1;
+  bytes data = 2;
+  int64 version = 3;
+  int64 timestamp = 4;
+}
+
+// SyncAck acknowledges state update
+message SyncAck {
+  int64 version = 1;
+  bool success = 2;
+}
+
+// PingRequest for master-standby heartbeat
+message PingRequest {
+  string sender_id = 1;
+  int64 timestamp = 2;
+}
+
+// PingResponse for master-standby heartbeat
+message PingResponse {
+  string responder_id = 1;
+  bool is_master = 2;
+  int64 timestamp = 3;
+}

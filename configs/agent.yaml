@@ -1,0 +1,46 @@
+# DGPU Agent Configuration
+
+agent:
+  # Agent ID (unique identifier)
+  # If empty, will be auto-generated from hostname
+  id: ""
+  # Heartbeat interval in seconds
+  heartbeat_interval: 5
+
+scheduler:
+  # Primary scheduler address
+  master_address: "scheduler-master:9090"
+  # Standby scheduler address
+  standby_address: "scheduler-standby:9090"
+  # Connection timeout in seconds
+  connection_timeout: 10
+  # Reconnection retry interval in seconds
+  retry_interval: 2
+  # Maximum retry interval in seconds (exponential backoff)
+  max_retry_interval: 30
+
+gpu:
+  # GPU detection method: nvml or nvidia-smi
+  detection_method: "nvml"
+  # Health check interval in seconds
+  health_check_interval: 30
+
+executor:
+  # Task execution method: docker or process
+  execution_method: "docker"
+  # Working directory for tasks
+  work_dir: "/var/lib/dgpu-agent/tasks"
+  # Docker configuration (if execution_method is docker)
+  docker:
+    # Docker socket path
+    socket: "/var/run/docker.sock"
+    # Default image
+    default_image: "nvidia/cuda:12.0-runtime-ubuntu22.04"
+
+logging:
+  # Log level: debug, info, warn, error
+  level: "info"
+  # Log format: json, text
+  format: "json"
+  # Log output: stdout, stderr, or file path
+  output: "stdout"
