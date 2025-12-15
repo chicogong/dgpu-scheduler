@@ -23,6 +23,7 @@ type Client struct {
 	client          proto.SchedulerServiceClient
 	logger          *logger.Logger
 	heartbeatStream proto.SchedulerService_HeartbeatClient
+	executor        *TaskExecutor
 	stopCh          chan struct{}
 }
 
@@ -94,13 +95,14 @@ func (c *Client) Register(ctx context.Context, gpus []models.GPU) error {
 }
 
 // StartHeartbeat starts the heartbeat loop
-func (c *Client) StartHeartbeat(ctx context.Context, interval time.Duration, gpus []models.GPU) error {
+func (c *Client) StartHeartbeat(ctx context.Context, interval time.Duration, gpus []models.GPU, executor *TaskExecutor) error {
 	stream, err := c.client.Heartbeat(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to start heartbeat: %w", err)
 	}
 
 	c.heartbeatStream = stream
+	c.executor = executor
 
 	// Start heartbeat sender
 	go c.heartbeatSender(ctx, interval, gpus)
@@ -191,7 +193,43 @@ func (c *Client) heartbeatReceiver(ctx context.Context) {
 				c.logger.Info("Received tasks from scheduler",
 					zap.Int("task_count", len(resp.Tasks)),
 				)
-				// TODO: Pass tasks to task executor
+
+				// Execute each task
+				for _, protoTask := range resp.Tasks {
+					// Convert proto task to models.Task
+					task := &models.Task{
+						ID:       protoTask.Id,
+						Priority: models.Priority(protoTask.Priority),
+						GPUCount: int(protoTask.GpuCount),
+						Command:  protoTask.Command,
+						Env:      protoTask.Env,
+						Status:   models.TaskStatusRunning,
+					}
+
+					// Extract GPU IDs
+					gpuIDs := protoTask.AssignedGpus
+
+					c.logger.Info("Executing task",
+						zap.String("task_id", task.ID),
+						zap.String("command", task.Command),
+						zap.Strings("gpu_ids", gpuIDs),
+					)
+
+					// Execute task
+					if err := c.executor.ExecuteTask(ctx, task, gpuIDs); err != nil {
+						c.logger.Error("Failed to execute task",
+							zap.String("task_id", task.ID),
+							zap.Error(err),
+						)
+						// Report failure to scheduler
+						if err := c.ReportTaskFinished(ctx, task.ID, "failed", err.Error()); err != nil {
+							c.logger.Error("Failed to report task failure",
+								zap.String("task_id", task.ID),
+								zap.Error(err),
+							)
+						}
+					}
+				}
 			}
 		}
 	}

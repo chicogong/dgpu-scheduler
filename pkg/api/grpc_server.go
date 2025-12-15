@@ -159,10 +159,36 @@ func (s *GRPCServer) Heartbeat(stream proto.SchedulerService_HeartbeatServer) er
 			}
 		}
 
+		// Get tasks assigned to this agent
+		state := s.state.GetState()
+		agentTasks := []*proto.Task{}
+
+		for _, task := range state.Tasks {
+			// Only send running tasks that are assigned to this agent
+			if task.Status == models.TaskStatusRunning && len(task.AssignedGPUs) > 0 {
+				// Check if any of the assigned GPUs belong to this agent
+				for _, gpuID := range task.AssignedGPUs {
+					if gpu, exists := state.GPUs[gpuID]; exists && gpu.NodeID == agentID {
+						// Convert to proto task
+						protoTask := &proto.Task{
+							Id:           task.ID,
+							Priority:     string(task.Priority),
+							GpuCount:     int32(task.GPUCount),
+							Command:      task.Command,
+							Env:          task.Env,
+							AssignedGpus: task.AssignedGPUs,
+						}
+						agentTasks = append(agentTasks, protoTask)
+						break // Only add the task once
+					}
+				}
+			}
+		}
+
 		// Send response
 		resp := &proto.HeartbeatResponse{
 			IsMaster:  s.isMaster,
-			Tasks:     []*proto.Task{}, // TODO: Send pending tasks to agent
+			Tasks:     agentTasks,
 			Timestamp: time.Now().Unix(),
 		}
 

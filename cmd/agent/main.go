@@ -110,22 +110,22 @@ func main() {
 
 	log.Info("Agent registered successfully")
 
-	// Start heartbeat
-	heartbeatInterval := time.Duration(cfg.Agent.HeartbeatInterval) * time.Second
-	log.Info("Starting heartbeat...",
-		zap.Duration("interval", heartbeatInterval),
-	)
-
-	if err := client.StartHeartbeat(ctx, heartbeatInterval, gpus); err != nil {
-		log.Fatal("Failed to start heartbeat", zap.Error(err))
-	}
-
 	// Initialize task executor
 	executor := agent.NewTaskExecutor(
 		cfg.Executor.ExecutionMethod,
 		cfg.Executor.WorkDir,
 		log,
 	)
+
+	// Start heartbeat
+	heartbeatInterval := time.Duration(cfg.Agent.HeartbeatInterval) * time.Second
+	log.Info("Starting heartbeat...",
+		zap.Duration("interval", heartbeatInterval),
+	)
+
+	if err := client.StartHeartbeat(ctx, heartbeatInterval, gpus, executor); err != nil {
+		log.Fatal("Failed to start heartbeat", zap.Error(err))
+	}
 
 	// Monitor task results
 	go func() {
