@@ -1,0 +1,25 @@
+# DGPU Agent Configuration - Local Test
+
+agent:
+  id: ""
+  heartbeat_interval: 5
+
+scheduler:
+  master_address: "localhost:19090"
+  standby_address: ""
+  connection_timeout: 10
+  retry_interval: 2
+  max_retry_interval: 30
+
+gpu:
+  detection_method: "nvidia-smi"
+  health_check_interval: 30
+
+executor:
+  execution_method: "process"
+  work_dir: "./test-local/tasks"
+
+logging:
+  level: "info"
+  format: "text"
+  output: "stdout"

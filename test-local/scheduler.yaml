@@ -1,0 +1,32 @@
+# DGPU Scheduler Configuration - Local Test
+
+server:
+  grpc_address: ":19090"
+  http_address: ":18080"
+
+scheduler:
+  role: "master"
+  schedule_interval: 5
+  snapshot_interval: 30
+
+replication:
+  enabled: false
+  peer_address: ""
+  heartbeat_interval: 2
+  heartbeat_timeout: 6
+
+quota:
+  online_percent: 0.7
+  batch_percent: 0.3
+
+agent:
+  heartbeat_timeout: 15
+
+storage:
+  snapshot_dir: "./test-local/scheduler"
+  shared_storage: "./test-local/shared"
+
+logging:
+  level: "info"
+  format: "text"
+  output: "stdout"
