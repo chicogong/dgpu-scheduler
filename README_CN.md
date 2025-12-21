@@ -42,29 +42,46 @@ DGPU Scheduler 是为中型 GPU 集群（50-200 节点）设计的分布式调�
 
 ## 🏗️ 系统架构
 
-```
-┌─────────────────────────────────────────────────┐
-│           用户/服务 (HTTP REST API)              │
-└─────────────────┬───────────────────────────────┘
-                  │
-        ┌─────────▼─────────┐
-        │   API 网关        │
-        │  (REST + gRPC)    │
-        └─────────┬─────────┘
-                  │
-    ┌─────────────▼──────────────┐
-    │   调度器主节点 (主备高可用)  │
-    │   • 调度引擎               │
-    │   • 状态管理               │
-    │   • 配额管理               │
-    └─────────────┬──────────────┘
-                  │ gRPC 通信
-         ┌────────┼────────┐
-         │        │        │
-    ┌────▼───┐ ┌─▼────┐ ┌─▼────┐
-    │ Agent  │ │Agent │ │Agent │
-    │GPU 节点│ │GPU节点│ │GPU节点│
-    └────────┘ └──────┘ └──────┘
+```mermaid
+graph TB
+    subgraph users["👥 用户/服务层"]
+        U1[在线推理服务]
+        U2[批处理任务]
+        U3[管理员]
+    end
+
+    subgraph gateway["🌐 API 网关"]
+        REST[REST API<br/>:8080]
+        GRPC[gRPC API<br/>:9090]
+    end
+
+    subgraph scheduler["⚙️ 调度器集群 (高可用)"]
+        M[Master 主节点<br/>• 调度引擎<br/>• 状态管理<br/>• 配额管理]
+        S[Standby 备节点<br/>• 状态复制<br/>• 故障切换]
+        M -.状态同步.-> S
+    end
+
+    subgraph agents["🖥️ GPU Agent 集群"]
+        A1[Agent 1<br/>GPU: 0,1,2,3]
+        A2[Agent 2<br/>GPU: 4,5,6,7]
+        A3[Agent N<br/>GPU: ...]
+    end
+
+    U1 & U2 & U3 -->|HTTP| REST
+    REST --> M
+    GRPC <-->|心跳/任务分发| M
+    M -->|任务调度| A1 & A2 & A3
+    A1 & A2 & A3 -->|任务状态| GRPC
+
+    classDef userClass fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef gatewayClass fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef schedulerClass fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef agentClass fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+
+    class U1,U2,U3 userClass
+    class REST,GRPC gatewayClass
+    class M,S schedulerClass
+    class A1,A2,A3 agentClass
 ```
 
 **架构亮点**：
@@ -297,6 +314,46 @@ kubectl apply -f deployments/k8s/
 
 ## 📊 核心概念
 
+### 调度流程
+
+```mermaid
+flowchart TD
+    Start([用户提交任务]) --> Validate{参数验证}
+    Validate -->|无效| Reject[返回错误]
+    Validate -->|有效| CheckQuota{检查配额}
+
+    CheckQuota -->|配额不足| Queue1[加入等待队列]
+    CheckQuota -->|配额充足| FindGPU{查找空闲GPU}
+
+    FindGPU -->|无空闲GPU| Queue2[加入等待队列]
+    FindGPU -->|找到GPU| Allocate[分配GPU资源]
+
+    Queue1 --> Wait[等待调度<br/>定期扫描: 5秒]
+    Queue2 --> Wait
+    Wait --> CheckQuota
+
+    Allocate --> UpdateQuota[更新配额计数]
+    UpdateQuota --> SendTask[发送任务到Agent]
+    SendTask --> Execute[Agent执行任务]
+
+    Execute --> Monitor{监控执行}
+    Monitor -->|心跳正常| Execute
+    Monitor -->|任务完成| Release[释放GPU资源]
+    Monitor -->|超时/失败| Release
+
+    Release --> UpdateQuota2[更新配额计数]
+    UpdateQuota2 --> Trigger[触发下一轮调度]
+    Trigger --> End([调度完成])
+
+    Reject --> End
+
+    style Start fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style End fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
+    style Allocate fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style Execute fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style Reject fill:#ffebee,stroke:#b71c1c,stroke-width:2px
+```
+
 ### 任务优先级
 
 - **high（高优先级）**：在线推理服务，占用在线配额
@@ -320,8 +377,25 @@ quota:
 
 ### 任务生命周期
 
-```
-提交 (pending) → 调度中 (pending) → 运行中 (running) → 完成 (success/failed)
+```mermaid
+stateDiagram-v2
+    [*] --> Pending: 用户提交任务
+    Pending --> Pending: 等待调度<br/>(配额不足/无空闲GPU)
+    Pending --> Running: 调度成功<br/>分配GPU
+    Running --> Success: 任务执行成功
+    Running --> Failed: 任务执行失败<br/>或超时
+    Success --> [*]
+    Failed --> [*]
+
+    note right of Pending
+        在优先级队列中等待
+        高优先级优先调度
+    end note
+
+    note right of Running
+        在 Agent 上执行
+        占用 GPU 资源
+    end note
 ```
 
 ---
