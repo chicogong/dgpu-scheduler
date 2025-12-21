@@ -1,0 +1,79 @@
+# 多阶段构建 - Agent
+FROM nvidia/cuda:12.0-runtime-ubuntu20.04 AS builder
+
+# 安装 Go 和必要工具
+RUN apt-get update && apt-get install -y \
+    wget \
+    git \
+    build-essential \
+    protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装 Go
+RUN wget -O go.tar.gz https://golang.org/dl/go1.21.5.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go.tar.gz && \
+    rm go.tar.gz
+
+ENV PATH="/usr/local/go/bin:${PATH}"
+
+# 安装 Go protobuf 插件
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制依赖文件
+COPY go.mod go.sum ./
+RUN go mod download
+
+# 复制源码
+COPY . .
+
+# 生成 protobuf 代码
+RUN make proto
+
+# 构建二进制文件
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
+    -ldflags "-X main.Version=$(git describe --tags --abbrev=0 2>/dev/null || echo 'v0.0.0') \
+              -X main.GitCommit=$(git rev-parse --short HEAD) \
+              -X main.BuildTime=$(date -u '+%Y-%m-%d_%H:%M:%S')" \
+    -o bin/agent ./cmd/agent
+
+# 运行阶段 - 使用 NVIDIA CUDA 基础镜像
+FROM nvidia/cuda:12.0-runtime-ubuntu20.04
+
+# 安装必要工具
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    docker.io \
+    wget \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 创建非root用户
+RUN groupadd -r agent && useradd -r -g agent agent
+
+# 将用户添加到 docker 组（如果需要 Docker 执行）
+RUN usermod -aG docker agent
+
+# 创建必要目录
+RUN mkdir -p /var/lib/dgpu-agent/logs && \
+    chown -R agent:agent /var/lib/dgpu-agent
+
+# 切换到非root用户
+USER agent
+
+WORKDIR /home/agent/
+
+# 从构建阶段复制二进制文件
+COPY --from=builder --chown=agent:agent /app/bin/agent .
+COPY --from=builder --chown=agent:agent /app/configs/agent.yaml ./configs/
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD pgrep agent || exit 1
+
+# 设置启动命令
+ENTRYPOINT ["./agent"]
+CMD ["-config", "configs/agent.yaml"]

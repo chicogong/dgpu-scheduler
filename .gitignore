@@ -27,5 +27,21 @@ go.work.sum
 # Build artifacts
 bin/
 
+# Test coverage
+coverage.out
+coverage.html
+
+# Test artifacts
+*.test
+
+# Local test state and logs
+test-local/scheduler/
+test-local/agent/
+test-local/tasks/
+test-local/*.log
+
+# Kubernetes (not used)
+deployments/k8s/
+
 # Claude Code configuration
 .claude/

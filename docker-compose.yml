@@ -1,0 +1,134 @@
+services:
+  # DGPU Scheduler Master
+  scheduler-master:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.scheduler
+    container_name: dgpu-scheduler-master
+    ports:
+      - "8080:8080"   # REST API
+      - "9090:9090"   # gRPC API
+    environment:
+      - SCHEDULER_ROLE=master
+      - LOG_LEVEL=info
+    volumes:
+      - scheduler_state:/var/lib/dgpu-scheduler/state
+      - ./configs/scheduler.yaml:/home/scheduler/configs/scheduler.yaml:ro
+    restart: unless-stopped
+    networks:
+      - dgpu-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # DGPU Scheduler Standby (可选)
+  scheduler-standby:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.scheduler
+    container_name: dgpu-scheduler-standby
+    ports:
+      - "8081:8080"   # REST API (不同端口)
+      - "9091:9090"   # gRPC API (不同端口)
+    environment:
+      - SCHEDULER_ROLE=standby
+      - MASTER_ADDRESS=scheduler-master:9090
+      - LOG_LEVEL=info
+    volumes:
+      - standby_state:/var/lib/dgpu-scheduler/state
+      - ./configs/scheduler.yaml:/home/scheduler/configs/scheduler.yaml:ro
+    restart: unless-stopped
+    networks:
+      - dgpu-network
+    depends_on:
+      - scheduler-master
+    profiles:
+      - ha  # 使用 --profile ha 启用高可用
+
+  # DGPU Agent (模拟 GPU 节点)
+  agent-node-1:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.agent
+    container_name: dgpu-agent-1
+    environment:
+      - SCHEDULER_MASTER_ADDRESS=scheduler-master:9090
+      - SCHEDULER_STANDBY_ADDRESS=scheduler-standby:9090
+      - AGENT_ID=agent-1
+      - GPU_DETECTION_METHOD=nvidia-smi
+      - LOG_LEVEL=info
+      - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/app/test-local
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker 访问
+      - agent_1_logs:/var/lib/dgpu-agent/logs
+      - ./configs/agent.yaml:/home/agent/configs/agent.yaml:ro
+      - ./test-local:/app/test-local:ro  # 挂载模拟 GPU 脚本
+    restart: unless-stopped
+    networks:
+      - dgpu-network
+    depends_on:
+      - scheduler-master
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # 可以添加更多 Agent 节点
+  agent-node-2:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile.agent
+    container_name: dgpu-agent-2
+    environment:
+      - SCHEDULER_MASTER_ADDRESS=scheduler-master:9090
+      - SCHEDULER_STANDBY_ADDRESS=scheduler-standby:9090
+      - AGENT_ID=agent-2
+      - GPU_DETECTION_METHOD=nvidia-smi
+      - LOG_LEVEL=info
+      - PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/app/test-local
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - agent_2_logs:/var/lib/dgpu-agent/logs
+      - ./configs/agent.yaml:/home/agent/configs/agent.yaml:ro
+      - ./test-local:/app/test-local:ro
+    restart: unless-stopped
+    networks:
+      - dgpu-network
+    depends_on:
+      - scheduler-master
+    profiles:
+      - scale  # 使用 --profile scale 启用多节点
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+networks:
+  dgpu-network:
+    driver: bridge
+    name: dgpu-scheduler-network
+
+volumes:
+  scheduler_state:
+    driver: local
+  standby_state:
+    driver: local
+  agent_1_logs:
+    driver: local
+  agent_2_logs:
+    driver: local
+
+# 使用说明：
+# 基础启动: docker-compose up -d
+# 高可用模式: docker-compose --profile ha up -d
+# 多节点模式: docker-compose --profile scale up -d
+# 完整模式: docker-compose --profile ha --profile scale up -d

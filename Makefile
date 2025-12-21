@@ -1,4 +1,4 @@
-.PHONY: all build clean test proto scheduler agent docker-build docker-push help
+.PHONY: all build clean test proto scheduler agent docker-build docker-push help deps fmt lint
 
 # Variables
 GOCMD=go
@@ -80,8 +80,8 @@ lint:
 ## docker-build: Build Docker images
 docker-build:
 	@echo "Building Docker images..."
-	docker build -t dgpu-scheduler:$(GIT_TAG) -f deployments/Dockerfile.scheduler .
-	docker build -t dgpu-agent:$(GIT_TAG) -f deployments/Dockerfile.agent .
+	docker build -t dgpu-scheduler:$(GIT_TAG) -f deployments/docker/Dockerfile.scheduler .
+	docker build -t dgpu-agent:$(GIT_TAG) -f deployments/docker/Dockerfile.agent .
 
 ## docker-push: Push Docker images
 docker-push:

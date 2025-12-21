@@ -1,0 +1,119 @@
+name: Security Audit
+
+on:
+  schedule:
+    # 每周一 UTC 2:00 运行
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+jobs:
+  # 依赖漏洞扫描
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Download dependencies
+      run: go mod download
+
+    - name: Run govulncheck
+      run: |
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./...
+
+    - name: Run Nancy for dependency check
+      run: |
+        go list -json -deps ./... | docker run --rm -i sonatypecommunity/nancy:latest sleuth
+
+  # 容器镜像安全扫描
+  container-scan:
+    name: Container Image Security Scan
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        component: [scheduler, agent]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: |
+        docker build -t dgpu-${{ matrix.component }}:scan \
+          -f deployments/docker/Dockerfile.${{ matrix.component }} .
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'dgpu-${{ matrix.component }}:scan'
+        format: 'sarif'
+        output: 'trivy-${{ matrix.component }}.sarif'
+
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: 'trivy-${{ matrix.component }}.sarif'
+
+    - name: Run Snyk to check Docker images for vulnerabilities
+      uses: snyk/actions/docker@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        image: 'dgpu-${{ matrix.component }}:scan'
+      continue-on-error: true
+
+  # SAST 静态代码分析
+  sast:
+    name: Static Application Security Testing
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: go
+        queries: security-and-quality
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v2
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        category: "/language:go"
+
+  # 秘密泄露检测
+  secret-scan:
+    name: Secret Leak Detection
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: TruffleHog OSS
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        extra_args: --debug --only-verified
