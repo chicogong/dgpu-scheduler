@@ -2,7 +2,7 @@
 FROM golang:1.24-alpine AS builder
 
 # 安装必要工具
-RUN apk add --no-cache git protoc protobuf-dev
+RUN apk add --no-cache git make protoc protobuf-dev
 
 # 安装 Go protobuf 插件
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
