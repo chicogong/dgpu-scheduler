@@ -265,9 +265,9 @@ func (c *Client) ReportTaskFinished(ctx context.Context, taskID, status, errorMs
 func (c *Client) Stop() {
 	close(c.stopCh)
 	if c.heartbeatStream != nil {
-		c.heartbeatStream.CloseSend()
+		_ = c.heartbeatStream.CloseSend()
 	}
 	if c.conn != nil {
-		c.conn.Close()
+		_ = c.conn.Close()
 	}
 }

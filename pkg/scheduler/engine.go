@@ -153,8 +153,7 @@ func (e *Engine) findAvailableGPUs(task *models.Task, allGPUs map[string]*models
 
 // selectGPUs selects N GPUs from available pool
 func (e *Engine) selectGPUs(available []*models.GPU, count int) []*models.GPU {
-	// Shuffle for random selection
-	rand.Seed(time.Now().UnixNano())
+	// Shuffle for random selection (Go 1.20+ auto-seeds global RNG)
 	rand.Shuffle(len(available), func(i, j int) {
 		available[i], available[j] = available[j], available[i]
 	})

@@ -54,7 +54,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
 		os.Exit(1)
 	}
-	defer log.Sync()
+	defer func() { _ = log.Sync() }()
 
 	log.Info("Starting DGPU Scheduler",
 		zap.String("version", Version),
@@ -116,7 +116,7 @@ func main() {
 	// Stop components
 	engine.Stop()
 	grpcServer.Stop()
-	restServer.Stop()
+	_ = restServer.Stop()
 	stateManager.Stop()
 
 	// Wait for shutdown

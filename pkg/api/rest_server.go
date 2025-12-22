@@ -338,7 +338,7 @@ func (s *RESTServer) corsMiddleware(next http.Handler) http.Handler {
 func (s *RESTServer) sendJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	_ = json.NewEncoder(w).Encode(data)
 }
 
 // sendError sends error response

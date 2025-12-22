@@ -59,10 +59,11 @@ jobs:
     - name: Check code format
       run: |
         make fmt
-        # Exclude protobuf generated files from format check
-        git diff --exit-code -- ':!api/proto/*.pb.go' || {
+        # Exclude protobuf generated files and go.mod/go.sum from format check
+        # go.mod/go.sum may be auto-updated by different Go versions
+        git diff --exit-code -- ':!api/proto/*.pb.go' ':!go.mod' ':!go.sum' || {
           echo "Code is not formatted. Please run 'make fmt'"
-          git diff -- ':!api/proto/*.pb.go'
+          git diff -- ':!api/proto/*.pb.go' ':!go.mod' ':!go.sum'
           exit 1
         }
 
