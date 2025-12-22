@@ -59,11 +59,12 @@ jobs:
     - name: Check code format
       run: |
         make fmt
-        if [ -n "$(git diff --exit-code)" ]; then
+        # Exclude protobuf generated files from format check
+        git diff --exit-code -- ':!api/proto/*.pb.go' || {
           echo "Code is not formatted. Please run 'make fmt'"
-          git diff
+          git diff -- ':!api/proto/*.pb.go'
           exit 1
-        fi
+        }
 
     - name: Run linter
       uses: golangci/golangci-lint-action@v3
