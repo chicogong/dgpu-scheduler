@@ -1,5 +1,5 @@
 # 多阶段构建 - Agent
-FROM nvidia/cuda:12.3.1-runtime-ubuntu20.04 AS builder
+FROM nvidia/cuda:12.6.3-runtime-ubuntu20.04 AS builder
 
 # 安装 Go 和必要工具
 RUN apt-get update && apt-get install -y \
@@ -41,7 +41,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
     -o bin/agent ./cmd/agent
 
 # 运行阶段 - 使用 NVIDIA CUDA 基础镜像
-FROM nvidia/cuda:12.3.1-runtime-ubuntu20.04
+FROM nvidia/cuda:12.6.3-runtime-ubuntu20.04
 
 # 安装必要工具
 RUN apt-get update && apt-get install -y \
