@@ -1,6 +1,22 @@
 # DGPU Scheduler
 
-Distributed, GPU-aware workload scheduler for heterogeneous clusters with support for mixed workloads, resource quotas, and high availability.
+<div align="center">
+
+[![Release](https://img.shields.io/github/v/release/chicogong/dgpu-scheduler)](https://github.com/chicogong/dgpu-scheduler/releases)
+[![Build Status](https://github.com/chicogong/dgpu-scheduler/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/chicogong/dgpu-scheduler/actions)
+[![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.21-blue.svg)](https://golang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Go Report Card](https://goreportcard.com/badge/github.com/chicogong/dgpu-scheduler)](https://goreportcard.com/report/github.com/chicogong/dgpu-scheduler)
+
+**Distributed, GPU-aware workload scheduler for heterogeneous clusters**
+
+Mixed Workloads • Resource Quotas • High Availability
+
+[简体中文](README_CN.md) | English
+
+</div>
+
+---
 
 ## Overview
 

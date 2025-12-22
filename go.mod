@@ -1,6 +1,6 @@
 module github.com/chicogong/dgpu-scheduler
 
-go 1.24.0
+go 1.21
 
 require (
 	go.uber.org/zap v1.27.1

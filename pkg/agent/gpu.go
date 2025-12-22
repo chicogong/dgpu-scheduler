@@ -152,10 +152,10 @@ func (d *GPUDetector) GetGPUStatus(gpus []models.GPU) ([]GPUStatus, error) {
 		}
 
 		status := GPUStatus{
-			ID:           gpuID,
-			Status:       string(gpuStatus),
-			Utilization:  float32(utilization),
-			MemoryUsed:   memoryUsed,
+			ID:          gpuID,
+			Status:      string(gpuStatus),
+			Utilization: float32(utilization),
+			MemoryUsed:  memoryUsed,
 		}
 
 		statuses = append(statuses, status)

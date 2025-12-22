@@ -2,13 +2,15 @@
 
 <div align="center">
 
-[![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.19-blue.svg)](https://golang.org/)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-active-success.svg)]()
+[![Release](https://img.shields.io/github/v/release/chicogong/dgpu-scheduler?label=%E7%89%88%E6%9C%AC)](https://github.com/chicogong/dgpu-scheduler/releases)
+[![Build Status](https://github.com/chicogong/dgpu-scheduler/workflows/CI%2FCD%20Pipeline/badge.svg)](https://github.com/chicogong/dgpu-scheduler/actions)
+[![Go Version](https://img.shields.io/badge/Go-%3E%3D%201.21-blue.svg)](https://golang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Go Report Card](https://goreportcard.com/badge/github.com/chicogong/dgpu-scheduler)](https://goreportcard.com/report/github.com/chicogong/dgpu-scheduler)
 
 **高性能的分布式 GPU 调度系统**
 
-支持混合工作负载 • 资源配额管理 • 高可用架构
+混合工作负载 • 资源配额管理 • 高可用架构
 
 [English](README.md) | 简体中文
 

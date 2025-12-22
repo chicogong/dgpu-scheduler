@@ -89,11 +89,11 @@ func (s *RESTServer) handleTasks(w http.ResponseWriter, r *http.Request) {
 // createTask creates a new task
 func (s *RESTServer) createTask(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Priority  string            `json:"priority"`
-		GPUCount  int               `json:"gpu_count"`
-		GPUModel  *string           `json:"gpu_model,omitempty"`
-		Command   string            `json:"command"`
-		Env       map[string]string `json:"env,omitempty"`
+		Priority string            `json:"priority"`
+		GPUCount int               `json:"gpu_count"`
+		GPUModel *string           `json:"gpu_model,omitempty"`
+		Command  string            `json:"command"`
+		Env      map[string]string `json:"env,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -119,13 +119,13 @@ func (s *RESTServer) createTask(w http.ResponseWriter, r *http.Request) {
 
 	// Create task
 	task := &models.Task{
-		ID:       generateTaskID(),
-		Priority: priority,
-		GPUCount: req.GPUCount,
-		GPUModel: req.GPUModel,
-		Command:  req.Command,
-		Env:      req.Env,
-		Status:   models.TaskStatusPending,
+		ID:        generateTaskID(),
+		Priority:  priority,
+		GPUCount:  req.GPUCount,
+		GPUModel:  req.GPUModel,
+		Command:   req.Command,
+		Env:       req.Env,
+		Status:    models.TaskStatusPending,
 		CreatedAt: time.Now(),
 	}
 

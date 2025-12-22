@@ -21,10 +21,10 @@ type SchedulerConfig struct {
 	} `yaml:"scheduler"`
 
 	Replication struct {
-		Enabled          bool   `yaml:"enabled"`
-		PeerAddress      string `yaml:"peer_address"`
-		HeartbeatInterval int   `yaml:"heartbeat_interval"`
-		HeartbeatTimeout int   `yaml:"heartbeat_timeout"`
+		Enabled           bool   `yaml:"enabled"`
+		PeerAddress       string `yaml:"peer_address"`
+		HeartbeatInterval int    `yaml:"heartbeat_interval"`
+		HeartbeatTimeout  int    `yaml:"heartbeat_timeout"`
 	} `yaml:"replication"`
 
 	Quota struct {
@@ -64,7 +64,7 @@ type AgentConfig struct {
 	} `yaml:"scheduler"`
 
 	GPU struct {
-		DetectionMethod      string `yaml:"detection_method"`
+		DetectionMethod     string `yaml:"detection_method"`
 		HealthCheckInterval int    `yaml:"health_check_interval"`
 	} `yaml:"gpu"`
 

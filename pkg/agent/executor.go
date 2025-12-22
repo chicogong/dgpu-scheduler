@@ -15,11 +15,11 @@ import (
 
 // TaskExecutor executes tasks on the agent
 type TaskExecutor struct {
-	method      string
-	workDir     string
-	logger      *logger.Logger
+	method       string
+	workDir      string
+	logger       *logger.Logger
 	runningTasks sync.Map // task_id -> *exec.Cmd
-	taskResults chan TaskResult
+	taskResults  chan TaskResult
 }
 
 // TaskResult represents the result of a task execution
