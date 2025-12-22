@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 Go
-RUN wget -O go.tar.gz https://golang.org/dl/go1.21.5.linux-amd64.tar.gz && \
+RUN wget -O go.tar.gz https://golang.org/dl/go1.24.0.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go.tar.gz && \
     rm go.tar.gz
 
