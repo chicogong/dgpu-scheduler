@@ -20,7 +20,7 @@ RUN go mod download
 COPY . .
 
 # 生成 protobuf 代码
-RUN make proto
+RUN PATH="/go/bin:$PATH" make proto
 
 # 构建二进制文件
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo \
