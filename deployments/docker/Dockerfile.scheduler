@@ -7,6 +7,7 @@ RUN apk add --no-cache git make protoc protobuf-dev
 # 安装 Go protobuf 插件
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
     go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+ENV PATH="/go/bin:${PATH}"
 
 # 设置工作目录
 WORKDIR /app
