@@ -237,21 +237,28 @@ jobs:
         # Linux AMD64
         GOOS=linux GOARCH=amd64 make build
         tar -czf dgpu-scheduler-linux-amd64.tar.gz -C bin/ .
+        make clean
 
         # Linux ARM64
         GOOS=linux GOARCH=arm64 make build
         tar -czf dgpu-scheduler-linux-arm64.tar.gz -C bin/ .
+        make clean
 
         # macOS AMD64
         GOOS=darwin GOARCH=amd64 make build
         tar -czf dgpu-scheduler-darwin-amd64.tar.gz -C bin/ .
+        make clean
 
         # macOS ARM64
         GOOS=darwin GOARCH=arm64 make build
         tar -czf dgpu-scheduler-darwin-arm64.tar.gz -C bin/ .
+        make clean
 
         # Windows AMD64
         GOOS=windows GOARCH=amd64 make build
+        # Rename to add .exe extension if not already present
+        [ -f bin/scheduler ] && mv bin/scheduler bin/scheduler.exe || true
+        [ -f bin/agent ] && mv bin/agent bin/agent.exe || true
         zip -j dgpu-scheduler-windows-amd64.zip bin/*.exe
 
     - name: Upload release assets
