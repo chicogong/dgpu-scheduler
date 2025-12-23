@@ -207,6 +207,9 @@ jobs:
     needs: [test, security, docker]
     if: github.event_name == 'release'
 
+    permissions:
+      contents: write
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
